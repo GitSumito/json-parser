@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JSON parser</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f4f4f9;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      padding: 20px;
+      width: 80vw;         /* 変更: 画面の80%の幅に設定 */
+      max-width: none;     /* 変更: 最大幅の制限を解除 */
+      background-color: #fff;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
+
+    .left-panel {
+      width: 200px;
+      margin-right: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .left-panel h2 {
+      margin: 0 0 10px;
+    }
+
+    .left-panel button {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+
+    .editor-wrapper {
+      flex: 1;
+      display: flex;
+    }
+
+    .line-numbers {
+      text-align: right;
+      margin-right: 10px;
+      padding: 10px;
+      background-color: #eee;
+      border: 1px solid #ddd;
+      border-radius: 4px 0 0 4px;
+      user-select: none;
+      font-family: monospace;
+      font-size: 14px;
+      line-height: 1.5;
+      overflow: hidden;  /* 追加: 枠を超えないようにクリップ */
+      position: sticky;  /* 追加: スクロール時に固定 */
+      top: 0;            /* 追加: スクロール時に固定 */
+    }
+    .line-numbers div.error-line {
+      background-color: #ffdddd;
+    }
+
+    textarea {
+      width: 100%;         /* 変更: テキストエリアを親要素内で100%に拡大 */
+      height: 700px;
+      overflow-y: auto;
+      white-space: pre;
+      overflow-x: auto;
+      font-family: monospace;
+      padding: 10px;
+      box-sizing: border-box;
+      margin-bottom: 20px;
+      border: 1px solid #ddd;
+      border-radius: 0 4px 4px 0;
+      resize: none;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    .error {
+      background-color: #ffdddd;
+      border: 1px solid red;
+      padding: 5px;
+      margin-top: 10px;
+      font-size: 14px;
+      color: red;
+    }
+
+    .output {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #e0f7fa;
+      border-radius: 4px;
+      font-size: 14px;
+      color: #00796b;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+      display: none;
+      position: relative; /* 追加: 相対位置を設定 */
+    }
+
+    .highlight {
+      background-color: #ffeb3b;
+    }
+
+    .close-btn {
+      position: absolute; /* 既存: 絶対位置を設定 */
+      top: 5px;           /* 既存: 上からの位置を設定 */
+      right: 5px;         /* 既存: 右からの位置を設定 */
+      background: white;  /* 変更: 背景を白に設定 */
+      border: 1px solid #ddd; /* 追加: 枠線を追加 */
+      /* border-radius: 50%; 追加: 丸い枠線に設定 */
+      font-size: 16px;    /* 既存: フォントサイズを設定 */
+      cursor: pointer;    /* 既存: カーソルをポインタに設定 */
+      color: #4CAF50;     /* 既存: テキストカラーを緑に設定 */
+    }
+
+    .close-btn:hover {
+      background: white;  /* 変更: ホバー時の背景も白に設定 */
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="left-panel">
+      <h2>JSON parser</h2>
+      <button onclick="parseJson()">Analyze</button>
+      <button onclick="clearContent()">Clear</button>
+      <!-- 追加: エラー��示領域を左パネル内に配置 -->
+      <div id="errorMessage" class="error" style="display: none;"></div>
+    </div>
+    <div class="editor-wrapper">
+      <div id="lineNumbers" class="line-numbers"></div>
+      <textarea id="jsonInput" placeholder="ここにJSONを入力してください" wrap="off"></textarea>
+    </div>
+    <div id="output" class="output">
+      <button class="close-btn" onclick="closeOutput()">×</button> <!-- 追加: バツマークボタン -->
+    </div>
+  </div>
+
+  <script>
+    function updateLineNumbers() {
+      const textarea = document.getElementById('jsonInput');
+      const lineNumbers = document.getElementById('lineNumbers');
+      // テキストエリアが空の場合、行番号を非表示にする
+      const lines = textarea.value ? (textarea.value.match(/\n/g) || []).length + 1 : 1;
+      let html = "";
+      for (let i = 1; i <= lines; i++) {
+        html += "<div>" + i + "</div>";
+      }
+      lineNumbers.innerHTML = html;
+      lineNumbers.style.height = textarea.clientHeight + 'px';
+    }
+
+    const jsonInput = document.getElementById('jsonInput');
+    jsonInput.addEventListener('input', updateLineNumbers);
+    // textarea の高さが変わったときに、lineNumbers の高さも更新する
+    jsonInput.addEventListener('input', function() {
+      updateLineNumbers();
+    });
+
+    jsonInput.addEventListener('scroll', function() {
+      lineNumbers.scrollTop = this.scrollTop;
+    });
+
+    function parseJson() {
+      const textarea = document.getElementById('jsonInput');
+      const jsonInput = textarea.value;
+      const outputDiv = document.getElementById('output');
+      const errorMessage = document.getElementById('errorMessage');
+
+      updateLineNumbers();
+
+      try {
+        const parsedJson = JSON.parse(jsonInput);
+        outputDiv.innerHTML = '<button class="close-btn" onclick="closeOutput()">×</button>' + JSON.stringify(parsedJson, null, 2); // 変更: textContent を innerHTML に変更
+        outputDiv.style.display = 'block';
+        errorMessage.style.display = 'none';
+        highlightJson(jsonInput);
+      } catch (e) {
+        outputDiv.style.display = 'none';
+        errorMessage.style.display = 'block';
+        errorMessage.textContent = 'JSONにエラーがあります: ' + e.message;
+        highlightJson(jsonInput, e.message);
+      }
+    }
+
+    function clearContent() {
+      document.getElementById('jsonInput').value = '';
+      document.getElementById('output').style.display = 'none';
+      document.getElementById('errorMessage').style.display = 'none';
+      updateLineNumbers();
+    }
+
+    function highlightJson(jsonInput, errorMessage = '') {
+      const lineNumbers = document.getElementById('lineNumbers');
+      Array.from(lineNumbers.children).forEach(child => child.classList.remove('error-line'));
+
+      if (errorMessage !== '') {
+        const errorPosition = errorMessage.match(/position (\d+)/);
+        if (errorPosition) {
+          const position = parseInt(errorPosition[1], 10);
+          const beforeError = jsonInput.substr(0, position);
+          const lineNumber = beforeError.split("\n").length; // エラー行番号（1始まり）
+          if(lineNumbers.children[lineNumber - 1]) {
+            lineNumbers.children[lineNumber - 1].classList.add('error-line');
+          }
+        }
+      }
+    }
+
+    function closeOutput() {
+      document.getElementById('output').style.display = 'none';
+    }
+  </script>
+</body>
+</html>
+
+
+
