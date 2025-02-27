@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -22,15 +23,17 @@
       flex-direction: row;
       align-items: flex-start;
       padding: 20px;
-      width: 80vw;         /* 変更: 画面の80%の幅に設定 */
-      max-width: none;     /* 変更: 最大幅の制限を解除 */
+      width: 90vw;
+      height: 80vh;
       background-color: #fff;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
       border-radius: 8px;
+      overflow: hidden;
     }
 
     .left-panel {
-      width: 200px;
+      width: 180px;
+      min-width: 180px;
       margin-right: 20px;
       display: flex;
       flex-direction: column;
@@ -46,50 +49,66 @@
       margin-bottom: 10px;
     }
 
-    .editor-wrapper {
+    .editor-container {
       flex: 1;
       display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      height: 100%;
+    }
+
+    .editor-wrapper {
+      display: flex;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      overflow: hidden;
+      height: 70%;
+      min-height: 400px;
     }
 
     .line-numbers {
-      text-align: right;
-      margin-right: 10px;
-      padding: 10px;
+      width: 50px;
+      min-width: 50px;
+      padding: 10px 5px 10px 5px;
       background-color: #eee;
-      border: 1px solid #ddd;
-      border-radius: 4px 0 0 4px;
       user-select: none;
       font-family: monospace;
       font-size: 14px;
       line-height: 1.5;
-      overflow: hidden;  /* 追加: 枠を超えないようにクリップ */
-      position: sticky;  /* 追加: スクロール時に固定 */
-      top: 0;            /* 追加: スクロール時に固定 */
+      text-align: right;
+      overflow-y: auto;
+      border-right: 1px solid #ddd;
     }
+
     .line-numbers div.error-line {
       background-color: #ffdddd;
     }
 
+    .textarea-wrapper {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+
     textarea {
-      width: 100%;         /* 変更: テキストエリアを親要素内で100%に拡大 */
-      height: 700px;
-      overflow-y: auto;
-      white-space: pre;
-      overflow-x: auto;
-      font-family: monospace;
+      width: 100%;
+      height: 100%;
       padding: 10px;
       box-sizing: border-box;
-      margin-bottom: 20px;
-      border: 1px solid #ddd;
-      border-radius: 0 4px 4px 0;
+      border: none;
       resize: none;
+      font-family: monospace;
       font-size: 14px;
       line-height: 1.5;
+      white-space: pre;
+      overflow-y: scroll;
+      overflow-x: auto;
+      outline: none;
     }
 
     button {
       padding: 10px 20px;
-      margin: 5px;
+      margin: 5px 0;
       background-color: #4CAF50;
       color: white;
       border: none;
@@ -109,6 +128,7 @@
       margin-top: 10px;
       font-size: 14px;
       color: red;
+      word-break: break-word;
     }
 
     .output {
@@ -121,45 +141,84 @@
       word-wrap: break-word;
       white-space: pre-wrap;
       display: none;
-      position: relative; /* 追加: 相対位置を設定 */
-    }
-
-    .highlight {
-      background-color: #ffeb3b;
+      position: relative;
+      flex-grow: 1;
+      overflow-y: auto;
+      max-height: 30%;
     }
 
     .close-btn {
-      position: absolute; /* 既存: 絶対位置を設定 */
-      top: 5px;           /* 既存: 上からの位置を設定 */
-      right: 5px;         /* 既存: 右からの位置を設定 */
-      background: white;  /* 変更: 背景を白に設定 */
-      border: 1px solid #ddd; /* 追加: 枠線を追加 */
-      /* border-radius: 50%; 追加: 丸い枠線に設定 */
-      font-size: 16px;    /* 既存: フォントサイズを設定 */
-      cursor: pointer;    /* 既存: カーソルをポインタに設定 */
-      color: #4CAF50;     /* 既存: テキストカラーを緑に設定 */
+      position: absolute;
+      top: 5px;
+      right: 10px;
+      background: white;
+      border: 1px solid #ddd;
+      width: 30px;
+      height: 30px;
+      line-height: 30px;
+      text-align: center;
+      font-size: 16px;
+      cursor: pointer;
+      color: #4CAF50;
+      z-index: 10;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
 
     .close-btn:hover {
-      background: white;  /* 変更: ホバー時の背景も白に設定 */
+      background: #f5f5f5;
+    }
+
+    .success {
+      background-color: #ddffdd;
+      border: 1px solid green;
+      padding: 5px;
+      margin-top: 10px;
+      font-size: 14px;
+      color: green;
+      word-break: break-word;
+    }
+
+    /* スクロールバーのスタイル */
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #888;
+      border-radius: 5px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #555;
     }
   </style>
 </head>
+
 <body>
   <div class="container">
     <div class="left-panel">
       <h2>JSON parser</h2>
       <button onclick="parseJson()">Analyze</button>
       <button onclick="clearContent()">Clear</button>
-      <!-- 追加: エラー��示領域を左パネル内に配置 -->
-      <div id="errorMessage" class="error" style="display: none;"></div>
     </div>
-    <div class="editor-wrapper">
-      <div id="lineNumbers" class="line-numbers"></div>
-      <textarea id="jsonInput" placeholder="ここにJSONを入力してください" wrap="off"></textarea>
-    </div>
-    <div id="output" class="output">
-      <button class="close-btn" onclick="closeOutput()">×</button> <!-- 追加: バツマークボタン -->
+    <div class="editor-container">
+      <div class="editor-wrapper">
+        <div id="lineNumbers" class="line-numbers"></div>
+        <div class="textarea-wrapper">
+          <textarea id="jsonInput" placeholder="ここにJSONを入力してください" wrap="off"></textarea>
+        </div>
+      </div>
+      <div id="output" class="output">
+        <button class="close-btn" onclick="closeOutput()">×</button>
+      </div>
+      <div id="message" class="success" style="display: none;"></div>
     </div>
   </div>
 
@@ -167,45 +226,48 @@
     function updateLineNumbers() {
       const textarea = document.getElementById('jsonInput');
       const lineNumbers = document.getElementById('lineNumbers');
-      // テキストエリアが空の場合、行番号を非表示にする
-      const lines = textarea.value ? (textarea.value.match(/\n/g) || []).length + 1 : 1;
+      const lines = textarea.value.split('\n').length;
       let html = "";
       for (let i = 1; i <= lines; i++) {
         html += "<div>" + i + "</div>";
       }
       lineNumbers.innerHTML = html;
-      lineNumbers.style.height = textarea.clientHeight + 'px';
+      lineNumbers.style.height = textarea.scrollHeight + 'px';
     }
 
     const jsonInput = document.getElementById('jsonInput');
     jsonInput.addEventListener('input', updateLineNumbers);
-    // textarea の高さが変わったときに、lineNumbers の高さも更新する
-    jsonInput.addEventListener('input', function() {
-      updateLineNumbers();
-    });
-
-    jsonInput.addEventListener('scroll', function() {
-      lineNumbers.scrollTop = this.scrollTop;
+    jsonInput.addEventListener('scroll', function () {
+      const lineNumbers = document.getElementById('lineNumbers');
+      // 行番号をスクロールに合わせてtranslateYで連動させる
+      lineNumbers.style.transform = 'translateY(-' + this.scrollTop + 'px)';
     });
 
     function parseJson() {
       const textarea = document.getElementById('jsonInput');
       const jsonInput = textarea.value;
       const outputDiv = document.getElementById('output');
-      const errorMessage = document.getElementById('errorMessage');
+      const messageDiv = document.getElementById('message');
 
       updateLineNumbers();
 
       try {
         const parsedJson = JSON.parse(jsonInput);
-        outputDiv.innerHTML = '<button class="close-btn" onclick="closeOutput()">×</button>' + JSON.stringify(parsedJson, null, 2); // 変更: textContent を innerHTML に変更
+        outputDiv.innerHTML = '<button class="close-btn" onclick="closeOutput()">×</button>' + JSON.stringify(parsedJson, null, 2);
         outputDiv.style.display = 'block';
-        errorMessage.style.display = 'none';
+        messageDiv.style.display = 'block';
+        messageDiv.style.backgroundColor = '#ddffdd';
+        messageDiv.style.borderColor = 'green';
+        messageDiv.style.color = 'green';
+        messageDiv.textContent = 'JSONが正常に解析されました。';
         highlightJson(jsonInput);
       } catch (e) {
         outputDiv.style.display = 'none';
-        errorMessage.style.display = 'block';
-        errorMessage.textContent = 'JSONにエラーがあります: ' + e.message;
+        messageDiv.style.display = 'block';
+        messageDiv.style.backgroundColor = '#ffdddd';
+        messageDiv.style.borderColor = 'red';
+        messageDiv.style.color = 'red';
+        messageDiv.textContent = 'JSONにエラーがあります: ' + e.message;
         highlightJson(jsonInput, e.message);
       }
     }
@@ -213,7 +275,7 @@
     function clearContent() {
       document.getElementById('jsonInput').value = '';
       document.getElementById('output').style.display = 'none';
-      document.getElementById('errorMessage').style.display = 'none';
+      document.getElementById('message').style.display = 'none';
       updateLineNumbers();
     }
 
@@ -226,8 +288,8 @@
         if (errorPosition) {
           const position = parseInt(errorPosition[1], 10);
           const beforeError = jsonInput.substr(0, position);
-          const lineNumber = beforeError.split("\n").length; // エラー行番号（1始まり）
-          if(lineNumbers.children[lineNumber - 1]) {
+          const lineNumber = beforeError.split("\n").length;
+          if (lineNumbers.children[lineNumber - 1]) {
             lineNumbers.children[lineNumber - 1].classList.add('error-line');
           }
         }
@@ -239,7 +301,5 @@
     }
   </script>
 </body>
+
 </html>
-
-
-
